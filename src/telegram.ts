@@ -134,8 +134,6 @@ class TelegramController {
     private async handleGenericCommand(msg: TelegramBot.Message, handler: (msg: TelegramBot.Message) => Promise<void>) {
         const chatId = msg.chat.id;
         const userId = msg.from?.id;
-        console.log("_________________chatId", chatId);
-        console.log("__________________userId", userId);
         if (!this.isUserAllowed(userId)) {
             await this.sendMessageWithRetry(chatId, "🚫 You are not authorized to use this bot.");
             console.log(`Unauthorized command attempt by user ID: ${userId} (${msg.text}), chat ID: ${chatId}`);

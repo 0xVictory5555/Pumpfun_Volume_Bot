@@ -153,12 +153,6 @@ export class PumpfunVbot {
         8
       );
 
-      console.log({
-        bondingCurve: bondingCurve.toBase58(),
-        associatedBondingCurve: associatedBondingCurve.toBase58(),
-        virtualTokenReserves: this.virtualTokenReserves,
-        virtualSolReserves: this.virtualSolReserves,
-      });
     } catch (error: any) {
       console.error("Error getting pump data:", error.message);
       throw new Error("Failed to get pump data. Please check token address and RPC.");
@@ -243,25 +237,25 @@ export class PumpfunVbot {
         }
       }
 
-      if (instructions.length === 0 && i < chunkedKeypairs.length - 1) continue;
+      // if (instructions.length === 0 && i < chunkedKeypairs.length - 1) continue;
 
 
-      const isLastTxnForBundle = i === chunkedKeypairs.length - 1;
-      if (isLastTxnForBundle && instructions.length > 0) {
-        const jitoTipIns = SystemProgram.transfer({
-          fromPubkey: userKeypair.publicKey,
-          toPubkey: new PublicKey(tipAccounts[0]),
-          lamports: this.jitoTipAmountLamports,
-        });
-        instructions.push(jitoTipIns);
-      } else if (isLastTxnForBundle && instructions.length === 0 && this.jitoTipAmountLamports > 0) {
-        const jitoTipIns = SystemProgram.transfer({
-          fromPubkey: userKeypair.publicKey,
-          toPubkey: new PublicKey(tipAccounts[0]),
-          lamports: this.jitoTipAmountLamports,
-        });
-        instructions.push(jitoTipIns);
-      }
+      // const isLastTxnForBundle = i === chunkedKeypairs.length - 1;
+      // if (isLastTxnForBundle && instructions.length > 0) {
+      //   const jitoTipIns = SystemProgram.transfer({
+      //     fromPubkey: userKeypair.publicKey,
+      //     toPubkey: new PublicKey(tipAccounts[0]),
+      //     lamports: this.jitoTipAmountLamports,
+      //   });
+      //   instructions.push(jitoTipIns);
+      // } else if (isLastTxnForBundle && instructions.length === 0 && this.jitoTipAmountLamports > 0) {
+      //   const jitoTipIns = SystemProgram.transfer({
+      //     fromPubkey: userKeypair.publicKey,
+      //     toPubkey: new PublicKey(tipAccounts[0]),
+      //     lamports: this.jitoTipAmountLamports,
+      //   });
+      //   instructions.push(jitoTipIns);
+      // }
 
 
       if (instructions.length === 0) continue;
@@ -659,8 +653,6 @@ export class PumpfunVbot {
 
               lamports: this.jitoTipAmountLamports,
             }));
-          console.log("jitoTipdasafdasfd", this.jitoTipAmountLamports);
-
         }
 
         const messageV0 = new TransactionMessage({
@@ -980,7 +972,6 @@ export class PumpfunVbot {
           // }
           if (instructions.length === 0) continue;
         }
-        console.log("asdfffffffffffffffffffffffffffffffffffffffffffffffff", i, chunkedKeypairs.length)
         if (i === chunkedKeypairs.length - 1) {
           instructions.push(
             SystemProgram.transfer({
@@ -1027,7 +1018,6 @@ export class PumpfunVbot {
               commitment: 'confirmed'
             });
           const { err, logs } = simulatedTransactionResponse;
-          console.log("🚀 Simulate Swap ~___________________________", Date.now());
           if (err) {
             console.error("Swap Simulation Failed for chunk", i, { err, logs });
             continue;
@@ -1040,13 +1030,12 @@ export class PumpfunVbot {
         }
       }
 
-      console.log("🚀 ____________________Simulate Swap ~_____________________", Date.now());
+      console.log("🚀 Simulate Swap ~", Date.now());
       const encodedSignedTxns = [];
       for (const tx of rawTxns) {
         const encodedSignedTx = bs58.encode(tx);
         encodedSignedTxns.push(encodedSignedTx);
       }
-      console.log(encodedSignedTxns);
       try {
         const jitoResponse = await fetch(
           `https://mainnet.block-engine.jito.wtf/api/v1/bundles`,
