@@ -13,7 +13,7 @@ import {
 import fs from 'fs';
 
 // Add missing constant
-const DefaultJitoTipAmountLamports = 1000000; // 0.00001 SOL
+const DefaultJitoTipAmountLamports = 1000000; // 0.0001 SOL
 
 // Rate limiting constants
 const TELEGRAM_RATE_LIMIT_DELAY = 1000; // 1 second between messages

@@ -43,7 +43,6 @@ export class JitoBundleService {
   // }
   async sendBundle(rawTxns: Uint8Array[]) {
     const encodedTxns = rawTxns.map(raw => Buffer.from(raw).toString('base64'));
-    console.log("encodedTxns", encodedTxns);
     // return;
     const jitoURL = `${this.endpoint}/api/v1/bundles`;
     const payload = {
