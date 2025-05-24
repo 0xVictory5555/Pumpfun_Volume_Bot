@@ -643,51 +643,50 @@ export class PumpfunVbot {
           continue;
         }
 
-        if (i === accountChunks.length - 1) {
 
-          const { value: simulatedTransactionResponse } =
-            await connection.simulateTransaction(vTxn, {
-              sigVerify: false,
-              replaceRecentBlockhash: true,
-              commitment: 'confirmed'
-            });
-          const { err, logs } = simulatedTransactionResponse;
-          console.log("🚀 Simulate Extend LUT ~", Date.now());
-          if (err) {
-            console.error("Extend LUT Simulation Failed for chunk", i, { err, logs });
-            continue;
-          }
-
-          const encodedSignedTxns = [bs58.encode(rawTxnItem)];
-
-          try {
-            const jitoResponse = await fetch(
-              `https://mainnet.block-engine.jito.wtf/api/v1/bundles`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  jsonrpc: "2.0",
-                  id: 1,
-                  method: "sendBundle",
-                  params: [encodedSignedTxns],
-                }),
-              }
-            );
-            if (jitoResponse.status === 200) {
-              console.log("bundle sent successfully", jitoResponse.status);
-            } else {
-              console.log(
-                "bundle failed, please check the parameters",
-                jitoResponse
-              );
-            }
-          } catch (e: any) {
-            console.error(e.message);
-          }
+        const { value: simulatedTransactionResponse } =
+          await connection.simulateTransaction(vTxn, {
+            sigVerify: false,
+            replaceRecentBlockhash: true,
+            commitment: 'confirmed'
+          });
+        const { err, logs } = simulatedTransactionResponse;
+        console.log("🚀 Simulate Extend LUT ~", Date.now());
+        if (err) {
+          console.error("Extend LUT Simulation Failed for chunk", i, { err, logs });
+          continue;
         }
+
+        const encodedSignedTxns = [bs58.encode(rawTxnItem)];
+
+        try {
+          const jitoResponse = await fetch(
+            `https://mainnet.block-engine.jito.wtf/api/v1/bundles`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                jsonrpc: "2.0",
+                id: 1,
+                method: "sendBundle",
+                params: [encodedSignedTxns],
+              }),
+            }
+          );
+          if (jitoResponse.status === 200) {
+            console.log("bundle sent successfully", jitoResponse.status);
+          } else {
+            console.log(
+              "bundle failed, please check the parameters",
+              jitoResponse
+            );
+          }
+        } catch (e: any) {
+          console.error(e.message);
+        }
+
       }
 
     } catch (e: any) {
