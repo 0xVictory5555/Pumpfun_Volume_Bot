@@ -8,6 +8,7 @@ import {
   TransactionInstruction,
   TransactionMessage,
   VersionedTransaction,
+  ComputeBudgetProgram,
 } from "@solana/web3.js";
 import * as spl from "@solana/spl-token";
 import bs58 from "bs58";
@@ -382,12 +383,6 @@ export class PumpfunVbot {
       }
     }
 
-    // const jitoTipIns = SystemProgram.transfer({
-    //   fromPubkey: userKeypair.publicKey,
-    //   toPubkey: new PublicKey(tipAccounts[0]),
-    //   lamports: this.jitoTipAmountLamports,
-    // });
-    // instructions.push(jitoTipIns);
 
     const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
     const messageV0 = new TransactionMessage({
@@ -405,26 +400,6 @@ export class PumpfunVbot {
     }
 
     try {
-      // const { value: simulatedTransactionResponse } =
-      //   await connection.simulateTransaction(vTxn, {
-      //     sigVerify: false,
-      //     replaceRecentBlockhash: true,
-      //     commitment: 'confirmed'
-      //   });
-      // const { err, logs } = simulatedTransactionResponse;
-      // console.log("🚀 Simulate Distribute SOL ~kkk", Date.now());
-      // if (err) {
-      //   console.error("Distribute SOL Simulation Failed:", { err, logs });
-      //   throw new Error(`Simulation Failed for SOL distribution.`);
-      // }
-
-      // const bundleId = await this.jitoBundleInstance.sendBundle([rawTxn]);
-      // if (bundleId) {
-      //   await this.jitoBundleInstance.getBundleStatus(bundleId);
-      // } else {
-      //   throw new Error("Failed to send SOL distribution bundle.");
-      // }
-
       const sig = await connection.sendRawTransaction(rawTxn, {
         skipPreflight: true,
         maxRetries: 3,
@@ -650,7 +625,6 @@ export class PumpfunVbot {
             SystemProgram.transfer({
               fromPubkey: userKeypair.publicKey,
               toPubkey: new PublicKey(tipAccounts[0]),
-
               lamports: this.jitoTipAmountLamports,
             }));
         }
@@ -687,7 +661,7 @@ export class PumpfunVbot {
 
           try {
             const jitoResponse = await fetch(
-              `https://amsterdam.mainnet.block-engine.jito.wtf/api/v1/bundles`,
+              `https://mainnet.block-engine.jito.wtf/api/v1/bundles`,
               {
                 method: "POST",
                 headers: {
@@ -713,9 +687,6 @@ export class PumpfunVbot {
             console.error(e.message);
           }
         }
-        // const sig = await connection.sendRawTransaction(rawTxnItem);
-        // console.log("Sent regular LUT extension tx:", sig);
-        // rawTxnsForBundle.push(rawTxnItem);
       }
 
     } catch (e: any) {
@@ -770,7 +741,7 @@ export class PumpfunVbot {
 
 
       const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-      const chunkedKeypairs = chunkArray(this.keypairs, 4);
+      const chunkedKeypairs = chunkArray(this.keypairs, 3);
       const rawTxns: Uint8Array[] = [];
 
       for (let i = 0; i < chunkedKeypairs.length; i++) {
@@ -925,69 +896,34 @@ export class PumpfunVbot {
                 tokenATA,
                 keypair.publicKey,
                 keypair.publicKey
-              ),
-              SystemProgram.transfer({
-                fromPubkey: keypair.publicKey,
-                toPubkey: new PublicKey(tipAccounts[1]),
-                lamports: this.jitoTipAmountLamports,
-              })
+              )
+              // SystemProgram.transfer({
+              //   fromPubkey: keypair.publicKey,
+              //   toPubkey: new PublicKey(tipAccounts[1]),
+              //   lamports: this.jitoTipAmountLamports,
+              // })
             );
+            instructions.push(
+              ComputeBudgetProgram.setComputeUnitLimit({
+                units: 100000
+              }),
+              ComputeBudgetProgram.setComputeUnitPrice({
+                microLamports: 300000
+              }),
+            )
           }
 
-          const { blockhash: blockhash1, lastValidBlockHeight } = await connection.getLatestBlockhash();
+          // const { blockhash: blockhash1, lastValidBlockHeight } = await connection.getLatestBlockhash();
 
-          // const messageV0 = new TransactionMessage({
-          //   payerKey: keypair.publicKey,
-          //   recentBlockhash: blockhash1,
-          //   instructions,
-          // }).compileToV0Message([this.lookupTableAccount]);
 
-          // const vTxn = new VersionedTransaction(messageV0);
-          // vTxn.sign([keypair]);
-
-          // const rawTxnItem = vTxn.serialize();
-
-          // console.log("Swap Txn length:", rawTxnItem.length);
-          // const dddd = [bs58.encode(rawTxnItem)]
-          // const jitoResponse3 = await fetch(
-          //   `https://mainnet.block-engine.jito.wtf/api/v1/bundles`,
-          //   {
-          //     method: "POST",
-          //     headers: {
-          //       "Content-Type": "application/json",
-          //     },
-          //     body: JSON.stringify({
-          //       jsonrpc: "2.0",
-          //       id: 1,
-          //       method: "sendBundle",
-          //       params: [dddd],
-          //     }),
-          //   }
-          // );
-          // if (jitoResponse3.status === 200) {
-          //   console.log("++++Bundle sent successfully");
-          // } else {
-          //   const data = await jitoResponse3.json();
-          //   console.log("+++++++Bundle failed:", jitoResponse3.status, jitoResponse3, data);
-          // }
           if (instructions.length === 0) continue;
         }
-        if (i === chunkedKeypairs.length - 1) {
-          instructions.push(
-            SystemProgram.transfer({
-              fromPubkey: payerKeypair.publicKey,
-              toPubkey: new PublicKey(tipAccounts[1]),
-              lamports: this.jitoTipAmountLamports,
-            })
-          );
-          console.log("jito tip amount lamports", this.jitoTipAmountLamports / 10 ** 9);
-        }
 
-        const { blockhash: blockhash1, lastValidBlockHeight } = await connection.getLatestBlockhash();
+        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
 
         const messageV0 = new TransactionMessage({
           payerKey: payerKeypair.publicKey,
-          recentBlockhash: blockhash1,
+          recentBlockhash: blockhash,
           instructions,
         }).compileToV0Message([this.lookupTableAccount]);
 
@@ -1022,46 +958,31 @@ export class PumpfunVbot {
             console.error("Swap Simulation Failed for chunk", i, { err, logs });
             continue;
           }
-
-          rawTxns.push(rawTxnItem);
+          // rawTxns.push(rawTxnItem);
         } catch (simError: any) {
           console.error("Error during swap simulation for chunk", i, simError.message);
           continue;
         }
-      }
 
-      console.log("🚀 Simulate Swap ~", Date.now());
-      const encodedSignedTxns = [];
-      for (const tx of rawTxns) {
-        const encodedSignedTx = bs58.encode(tx);
-        encodedSignedTxns.push(encodedSignedTx);
-      }
-      try {
-        const jitoResponse = await fetch(
-          `https://mainnet.block-engine.jito.wtf/api/v1/bundles`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              jsonrpc: "2.0",
-              id: 1,
-              method: "sendBundle",
-              params: [encodedSignedTxns],
-            }),
-          }
-        );
-        if (jitoResponse.status === 200) {
-          console.log("Bundle sent successfully");
-        } else {
-          console.log("Bundle failed:", jitoResponse.status);
+        console.log("🚀 Simulate Swap ~", Date.now());
 
+        try {
+          const sig = await connection.sendRawTransaction(rawTxnItem, {
+            skipPreflight: true,
+            maxRetries: 3,
+            preflightCommitment: 'confirmed'
+          });
+          console.log("Buy/Sell tx:", sig);
+          const confirmation = await connection.confirmTransaction({
+            signature: sig,
+            blockhash: blockhash,
+            lastValidBlockHeight: lastValidBlockHeight
+          }, "confirmed");
+        } catch (e: any) {
+          console.error("Error sending buy/sell tx:", e.message);
+          throw new Error("Failed to send buy/sell tx.");
         }
-      } catch (e: any) {
-        console.error("Error sending bundle:", e.message);
       }
-
     } catch (error: any) {
       console.error(`Error during swap cycle: ${error.message}`);
     }
