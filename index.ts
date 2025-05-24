@@ -638,25 +638,26 @@ export class PumpfunVbot {
         const vTxn = new VersionedTransaction(messageV0);
         vTxn.sign([userKeypair]);
         const rawTxnItem = vTxn.serialize();
-        console.log("Extend LUT Txn length:", rawTxnItem.length);
         if (rawTxnItem.length > 1232) {
           console.error("Extend LUT transaction too large. Chunk: ", i);
           continue;
         }
 
-        const { value: simulatedTransactionResponse } =
-          await connection.simulateTransaction(vTxn, {
-            sigVerify: false,
-            replaceRecentBlockhash: true,
-            commitment: 'confirmed'
-          });
-        const { err, logs } = simulatedTransactionResponse;
-        console.log("🚀 Simulate Extend LUT ~", Date.now());
-        if (err) {
-          console.error("Extend LUT Simulation Failed for chunk", i, { err, logs });
-          continue;
-        }
         if (i === accountChunks.length - 1) {
+
+          const { value: simulatedTransactionResponse } =
+            await connection.simulateTransaction(vTxn, {
+              sigVerify: false,
+              replaceRecentBlockhash: true,
+              commitment: 'confirmed'
+            });
+          const { err, logs } = simulatedTransactionResponse;
+          console.log("🚀 Simulate Extend LUT ~", Date.now());
+          if (err) {
+            console.error("Extend LUT Simulation Failed for chunk", i, { err, logs });
+            continue;
+          }
+
           const encodedSignedTxns = [bs58.encode(rawTxnItem)];
 
           try {
@@ -740,7 +741,6 @@ export class PumpfunVbot {
       }
 
 
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
       const chunkedKeypairs = chunkArray(this.keypairs, 3);
       const rawTxns: Uint8Array[] = [];
 
@@ -850,9 +850,9 @@ export class PumpfunVbot {
               continue;
             }
 
-            console.log(
-              ` Wallet ${keypair.publicKey.toBase58().substring(0, 5)} preparing to swap ${solAmountForSwap / LAMPORTS_PER_SOL} SOL / Avail: ${availableForSwap / LAMPORTS_PER_SOL} SOL`
-            );
+            // console.log(
+            //   ` Wallet ${keypair.publicKey.toBase58().substring(0, 5)} preparing to swap ${solAmountForSwap / LAMPORTS_PER_SOL} SOL / Avail: ${availableForSwap / LAMPORTS_PER_SOL} SOL`
+            // );
 
             if (this.virtualSolReserves === 0) {
               console.error("Virtual SOL reserves are zero. Cannot calculate token out. Skipping swap for wallet", keypair.publicKey.toBase58());
@@ -903,20 +903,17 @@ export class PumpfunVbot {
               //   lamports: this.jitoTipAmountLamports,
               // })
             );
-            instructions.push(
-              ComputeBudgetProgram.setComputeUnitLimit({
-                units: 100000
-              }),
-              ComputeBudgetProgram.setComputeUnitPrice({
-                microLamports: 300000
-              }),
-            )
           }
 
-          // const { blockhash: blockhash1, lastValidBlockHeight } = await connection.getLatestBlockhash();
-
-
           if (instructions.length === 0) continue;
+          instructions.push(
+            ComputeBudgetProgram.setComputeUnitLimit({
+              units: 200000
+            }),
+            ComputeBudgetProgram.setComputeUnitPrice({
+              microLamports: 100000
+            }),
+          )
         }
 
         const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
@@ -946,25 +943,25 @@ export class PumpfunVbot {
           continue;
         }
 
-        try {
-          const { value: simulatedTransactionResponse } =
-            await connection.simulateTransaction(vTxn, {
-              sigVerify: false,
-              replaceRecentBlockhash: true,
-              commitment: 'confirmed'
-            });
-          const { err, logs } = simulatedTransactionResponse;
-          if (err) {
-            console.error("Swap Simulation Failed for chunk", i, { err, logs });
-            continue;
-          }
-          // rawTxns.push(rawTxnItem);
-        } catch (simError: any) {
-          console.error("Error during swap simulation for chunk", i, simError.message);
-          continue;
-        }
+        // try {
+        //   const { value: simulatedTransactionResponse } =
+        //     await connection.simulateTransaction(vTxn, {
+        //       sigVerify: false,
+        //       replaceRecentBlockhash: true,
+        //       commitment: 'confirmed'
+        //     });
+        //   const { err, logs } = simulatedTransactionResponse;
+        //   if (err) {
+        //     console.error("Swap Simulation Failed for chunk", i, { err, logs });
+        //     continue;
+        //   }
+        //   // rawTxns.push(rawTxnItem);
+        // } catch (simError: any) {
+        //   console.error("Error during swap simulation for chunk", i, simError.message);
+        //   continue;
+        // }
 
-        console.log("🚀 Simulate Swap ~", Date.now());
+        // console.log("🚀 Simulate Swap ~", Date.now());
 
         try {
           const sig = await connection.sendRawTransaction(rawTxnItem, {
@@ -1056,9 +1053,9 @@ export class PumpfunVbot {
               { pubkey: PUMP_FUN_PROGRAM, isSigner: false, isWritable: false },
             ];
 
-            instructions.push(spl.createAssociatedTokenAccountIdempotentInstruction(
-              keypair.publicKey, tokenATA, keypair.publicKey, this.mint
-            ));
+            // instructions.push(spl.createAssociatedTokenAccountIdempotentInstruction(
+            //   keypair.publicKey, tokenATA, keypair.publicKey, this.mint
+            // ));
             instructions.push(new TransactionInstruction({ keys: sellKeys, programId: PUMP_FUN_PROGRAM, data: sellData }));
             instructions.push(spl.createCloseAccountInstruction(tokenATA, keypair.publicKey, keypair.publicKey));
           }
@@ -1074,15 +1071,16 @@ export class PumpfunVbot {
 
       if (instructions.length === 0) continue;
 
-      if (i === chunkedKeypairs.length - 1) {
-        instructions.push(
-          SystemProgram.transfer({
-            fromPubkey: payerKeypair.publicKey,
-            toPubkey: new PublicKey(tipAccounts[0]),
-            lamports: this.jitoTipAmountLamports,
-          })
-        );
-      }
+      // if (i === chunkedKeypairs.length - 1) {
+      //   instructions.push(
+      //     SystemProgram.transfer({
+      //       fromPubkey: payerKeypair.publicKey,
+      //       toPubkey: new PublicKey(tipAccounts[0]),
+      //       lamports: this.jitoTipAmountLamports,
+      //     })
+      //   );
+      // }
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
 
       const messageV0 = new TransactionMessage({
         payerKey: payerKeypair.publicKey,
@@ -1106,38 +1104,56 @@ export class PumpfunVbot {
         continue;
       }
 
+      // try {
+      //   const { value: simulatedTransactionResponse } =
+      //     await connection.simulateTransaction(vTxn, {
+      //       sigVerify: false,
+      //       replaceRecentBlockhash: true,
+      //       commitment: 'confirmed'
+      //     });
+      //   const { err, logs } = simulatedTransactionResponse;
+      //   console.log("🚀 Simulate Sell All ~", Date.now());
+      //   if (err) {
+      //     console.error("Sell All Simulation Failed for chunk", i, { err, logs });
+      //     continue;
+      //   }
+      //   rawTxns.push(rawTxnItem);
+      // } catch (simError: any) {
+      //   console.error("Error during Sell All simulation for chunk", i, simError.message);
+      //   continue;
+      // }
+
       try {
-        const { value: simulatedTransactionResponse } =
-          await connection.simulateTransaction(vTxn, {
-            sigVerify: false,
-            replaceRecentBlockhash: true,
-            commitment: 'confirmed'
-          });
-        const { err, logs } = simulatedTransactionResponse;
-        console.log("🚀 Simulate Sell All ~", Date.now());
-        if (err) {
-          console.error("Sell All Simulation Failed for chunk", i, { err, logs });
-          continue;
-        }
-        rawTxns.push(rawTxnItem);
-      } catch (simError: any) {
-        console.error("Error during Sell All simulation for chunk", i, simError.message);
-        continue;
+        const sig = await connection.sendRawTransaction(rawTxnItem, {
+          skipPreflight: true,
+          maxRetries: 3,
+          preflightCommitment: 'confirmed'
+        });
+        console.log("Buy/Sell tx:", sig);
+        const confirmation = await connection.confirmTransaction({
+          signature: sig,
+          blockhash: blockhash,
+          lastValidBlockHeight: lastValidBlockHeight
+        }, "confirmed");
+      } catch (e: any) {
+        console.error("Error sending buy/sell tx:", e.message);
+        throw new Error("Failed to send buy/sell tx.");
       }
+
     }
 
-    if (rawTxns.length > 0) {
-      console.log(`Sending ${rawTxns.length} transactions in a bundle to sell all tokens...`);
-      const bundleId = await this.jitoBundleInstance.sendBundle(rawTxns);
-      if (bundleId) {
-        const success = await this.jitoBundleInstance.getBundleStatus(bundleId);
-        if (success) console.log("Sell All Tokens bundle confirmed.");
-        else console.error("Sell All Tokens bundle failed to confirm.");
-      } else {
-        console.error("Failed to send Sell All Tokens bundle.");
-      }
-    } else {
-      console.log("No tokens to sell or no valid sell transactions created.");
-    }
+    // if (rawTxns.length > 0) {
+    //   console.log(`Sending ${rawTxns.length} transactions in a bundle to sell all tokens...`);
+    //   const bundleId = await this.jitoBundleInstance.sendBundle(rawTxns);
+    //   if (bundleId) {
+    //     const success = await this.jitoBundleInstance.getBundleStatus(bundleId);
+    //     if (success) console.log("Sell All Tokens bundle confirmed.");
+    //     else console.error("Sell All Tokens bundle failed to confirm.");
+    //   } else {
+    //     console.error("Failed to send Sell All Tokens bundle.");
+    //   }
+    // } else {
+    //   console.log("No tokens to sell or no valid sell transactions created.");
+    // }
   }
 }
