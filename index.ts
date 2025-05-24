@@ -905,7 +905,7 @@ export class PumpfunVbot {
             );
             instructions.push(
               ComputeBudgetProgram.setComputeUnitLimit({
-                units: 300000
+                units: 100000
               }),
               ComputeBudgetProgram.setComputeUnitPrice({
                 microLamports: 300000
