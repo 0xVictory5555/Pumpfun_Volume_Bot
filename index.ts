@@ -661,7 +661,7 @@ export class PumpfunVbot {
 
         try {
           const jitoResponse = await fetch(
-            `https://mainnet.block-engine.jito.wtf/api/v1/bundles`,
+            `https://tokyo.mainnet.block-engine.jito.wtf/api/v1/bundles`,
             {
               method: "POST",
               headers: {
@@ -902,20 +902,21 @@ export class PumpfunVbot {
               //   lamports: this.jitoTipAmountLamports,
               // })
             );
+
           }
 
           if (instructions.length === 0) continue;
-          instructions.push(
-            ComputeBudgetProgram.setComputeUnitLimit({
-              units: 200000
-            }),
-            ComputeBudgetProgram.setComputeUnitPrice({
-              microLamports: 100000
-            }),
-          )
         }
+        instructions.push(
+          ComputeBudgetProgram.setComputeUnitLimit({
+            units: 200000
+          }),
+          ComputeBudgetProgram.setComputeUnitPrice({
+            microLamports: 100000
+          }),
+        )
 
-        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
+        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
 
         const messageV0 = new TransactionMessage({
           payerKey: payerKeypair.publicKey,
@@ -931,8 +932,8 @@ export class PumpfunVbot {
             signersForTxn.add(kp);
           }
         });
-        // vTxn.sign(Array.from(signersForTxn));
-        vTxn.sign([payerKeypair]);
+        vTxn.sign(Array.from(signersForTxn));
+        // vTxn.sign([payerKeypair]);
 
         const rawTxnItem = vTxn.serialize();
 
