@@ -7,7 +7,7 @@ export const FEE_RECIPIENT = new PublicKey(
   "CebN5WGQ4jvEPvsVU4EoHEpgzq1VV7AbicfhtW4xC9iM"
 );
 export const FEE_VAULT = new PublicKey(
-  "BPRKJiR9cWmJX4rzUYLsD9qWr1JP63D3FxgNKDuqsMuM"
+  "DWsNRAtt6sey4rzCQWNmmkDS3f8eJ1MEPfgZbWEk88iN"
 );
 export const TOKEN_PROGRAM_ID = new PublicKey(
   "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
